@@ -10,20 +10,31 @@ from scrapy.http import Request
 
 class DiccionarioSpider(scrapy.Spider):
     name = 'diccionario'
-    start_urls = ['https://juegocodycross.com/crucero/grupo-650-fase-4']
+    start_urls = ['https://gameanswers.net/es/codycross-respuestas/']
 
     def parse(self, response):
-        palabras = response.css('p.respuesta strong::text').getall()
-        definiciones = response.css('h2.pregunta::text').getall()
-        next_link = response.xpath('//a[contains(@rel, "next")]/@href').get()
-        def_list = []
-        i=0
-        for palabra in palabras:
-            if len(palabra)< 10:
-                item = DiccionarioItem()
-                item['palabra'] = palabra
-                item['definicion'] = definiciones[i]
-                i+=1
-                yield item
-            else: i+1
-        yield Request(next_link, callback=self.parse)
+        categorias = response.css('ul.level_list').xpath('li/a/@href').getall()
+        for categoria in categorias:
+            next_link = 'https://gameanswers.net/'+categoria
+            yield Request(next_link, callback=self.parseCategory)
+
+    def parseCategory(self, response):
+        fases = response.css('ul.level_list').xpath('li/a/@href').getall()
+        for fase in fases:
+            next_link = 'https://gameanswers.net/'+fase
+            yield Request(next_link, callback=self.parsePuzzles)
+
+    def parsePuzzles(self, response):
+        puzzles = response.css('div.row').xpath('div/p/a/@href').getall()
+        for puzzle in puzzles:
+            next_link = 'https://gameanswers.net/'+puzzle
+            yield Request(next_link, callback=self.parseWords)
+
+    def parseWords(self, response):
+        definicion = response.css('div.row').xpath('h3/text()').get()
+        palabra = response.css('div.row').xpath('p/strong/text()').get()
+        if len(palabra)< 10:
+            item = DiccionarioItem()
+            item['palabra'] = palabra
+            item['definicion'] = definicion
+            yield item
