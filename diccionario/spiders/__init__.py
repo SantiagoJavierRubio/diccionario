@@ -6,34 +6,24 @@
 import scrapy
 import unidecode
 from diccionario.items import DiccionarioItem
+from scrapy.http import Request
 
 class DiccionarioSpider(scrapy.Spider):
     name = 'diccionario'
-    start_urls = ['http://www.culturageneral.net/palabrastecnicas/']
+    start_urls = ['https://juegocodycross.com/crucero/grupo-650-fase-4']
 
     def parse(self, response):
-        palabras = response.xpath('//b/text()').getall()
-        definiciones = response.xpath('//td/text()').getall()
-
+        palabras = response.css('p.respuesta strong::text').getall()
+        definiciones = response.css('h2.pregunta::text').getall()
+        next_link = response.xpath('//a[contains(@rel, "next")]/@href').get()
         def_list = []
-
-        for definicion in definiciones:
-            text = ' '.join(definicion.split())
-            if text == '':
-                continue
-            else:
-                def_list.append(text)
-
+        i=0
         for palabra in palabras:
-            if palabra == 'Palabra' or palabra == 'Definición':
-                continue
-            else:
-                palabra = palabra.replace(' ', '')
-                palabra = unidecode.unidecode(palabra)
-                definicion_valida = def_list.pop(0)
-
+            if len(palabra)< 10:
                 item = DiccionarioItem()
                 item['palabra'] = palabra
-                item['definicion'] = definicion_valida
-
+                item['definicion'] = definiciones[i]
+                i+=1
                 yield item
+            else: i+1
+        yield Request(next_link, callback=self.parse)

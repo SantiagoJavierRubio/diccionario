@@ -20,7 +20,7 @@ import pymongo
 
 class MongoDBPipeline(object):
 
-    collection_name = 'palabras_definidas'
+    collection_name = 'palabras_definidas2'
 
     def __init__(self, mongo_uri, mongo_db):
         self.mongo_uri = mongo_uri
